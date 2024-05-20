@@ -1,18 +1,15 @@
 import os
+from subprocess import Popen
 
-# OneDrive folder location (can be customized if needed)
-onedrive_folder = os.path.join(os.environ["USERPROFILE"], "OneDrive")
-dienstreisen_folder = os.path.join(onedrive_folder, "Dienstreisen")
+# Get OneDrive for Business folder location (modify if needed)
+onedrive_folder = os.path.join(os.environ["USERPROFILE"], "OneDrive - BASF")
 
 # Check if OneDrive folder exists
 if not os.path.exists(onedrive_folder):
-    print("OneDrive folder not found. Script cannot continue.")
-
-# Check if Dienstreisen folder exists within OneDrive
-if not os.path.exists(dienstreisen_folder):
-    # Create Dienstreisen folder
-    os.makedirs(dienstreisen_folder)
-    print("Dienstreisen folder created successfully!")
-
+    print("OneDrive for Business folder not found.")
 else:
-    print("Dienstreisen folder already exists.")
+    # Print OneDrive folder location
+    print(f"OneDrive for Business folder location: {onedrive_folder}")
+
+    # Open OneDrive folder in Explorer
+    Popen(['explorer.exe', onedrive_folder])
