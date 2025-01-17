@@ -1,4 +1,6 @@
 import os
+import datetime
+import pathlib as path
 from subprocess import Popen
 
 # Get OneDrive for Business folder location (modify if needed)
@@ -13,3 +15,7 @@ else:
 
     # Open OneDrive folder in Explorer
     Popen(['explorer.exe', onedrive_folder])
+
+today = datetime.date.today()
+
+print((today))
