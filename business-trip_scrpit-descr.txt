@@ -10,9 +10,9 @@ Ideally it shall be a function. After executing, the folders shall be generated 
 - Country of Location
 - City of trip
 - Hotel needed
-- Taxi/Ride-hailing needed
-- Rental Car needed
-- Flight needed
+- Taxi/Ride-hailing/Train needed (public_transport)
+- Rental Car needed (rental_car)
+- Flight needed (flights)
 - Meal expenses
 
 It might be a good idea to just pass a json file into that function with all the information.
