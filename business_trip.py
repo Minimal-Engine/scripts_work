@@ -1,126 +1,126 @@
-import os                 # um Informationen zum Benutzer und für den Ablageordner zu finden
-import datetime           # Handler für Reisedatum
-from pathlib import Path  # Handler für Ordner und Dateien
-from json import dump     # Handler für JSON-Dateien
+import os
+import datetime
+from pathlib import Path
+from json import dump
+import shutil
+import logging
 
-# Hol dir das Onedrive-Laufwerk des Benutzers:
-
-onedrive_env_var = os.getenv('OneDriveCommercial') or os.getenv('OneDrive')
-if not onedrive_env_var:
-    raise EnvironmentError("OneDrive path not found in environment variables")
-
-user_trip_path = onedrive_env_var + '\\second_brain_work\\00_ORG\\00_04_BUSINESS-TRIPS'
-
-print('Folgendes Verzeichnis wird für die Business-Trips verwendet:')
-print(Path(user_trip_path))
-
-# Frag die Reisedaten ab
-
-trip_data = {}
-trip_data.update({"trip_base_folder": Path(user_trip_path)})
-
-# Startdatum
-
-start_date = input("Start Business-Trips: (LEER für heute)")
-if start_date == "":
-    start_date = datetime.datetime.today().strftime('%Y-%m-%d')
-trip_data.update({"start_date": start_date})
-
-# Anzahl der Übernachtungen und Enddatum
-
-numberofnights = input("Anzahl der Übernachtungen (ENTER für Eine): ")
-if numberofnights == "":
-    numberofnights = 1
+# Konfiguration des Loggings
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-stop_date = (datetime.datetime.today()+datetime.timedelta(numberofnights)).strftime('%Y-%m-%d')
-trip_data.update({"stop_date": stop_date})
-trip_data.update({"numberofnights": numberofnights})
+def get_onedrive_path() -> str:
+    """Holt den OneDrive-Pfad des Benutzers aus den Umgebungsvariablen und verweist direkt auf den second_brain_work-Ordner."""
+    onedrive_env_var = os.getenv('OneDriveCommercial') or os.getenv('OneDrive')
+    if not onedrive_env_var:
+        raise EnvironmentError("OneDrive path not found in environment variables")
+    return os.path.join(onedrive_env_var, 'second_brain_work')
 
-# Zielland des Trips
 
-country_location = input("Land des Business-Trips: ")
-if country_location == "":
-    country_location = "DE"
-trip_data.update({"country_location": country_location})
+def get_trip_data(user_trip_path: str) -> dict:
+    """Fragt die Reisedaten vom Benutzer ab und gibt sie als Dictionary zurück."""
+    trip_data = {}
+    trip_data["trip_base_folder"] = Path(user_trip_path)
 
-# Zielstand des Trips
+    start_date = input("Start Business-Trips: (LEER für heute)")
+    if start_date == "":
+        start_date = datetime.datetime.today().strftime('%Y-%m-%d')
+    trip_data["start_date"] = start_date
 
-city_name = input("Stadt des Business-Trips: ")
-if city_name == "":
-    city_name = "Berlin"
-trip_data.update({"city_name": city_name})
+    numberofnights = input("Anzahl der Übernachtungen (ENTER für Eine): ")
+    if numberofnights == "":
+        numberofnights = 1
+    else:
+        numberofnights = int(numberofnights)
 
-# Anlass oder Firma des Trips
+    stop_date = (datetime.datetime.today() + datetime.timedelta(days=numberofnights)).strftime('%Y-%m-%d')
+    trip_data["stop_date"] = stop_date
+    trip_data["numberofnights"] = numberofnights
 
-trip_name = input("Firma oder Anlass des Business-Trips: ")
-if trip_name == "":
-    trip_name = "Meeting"
-trip_data.update({"trip_name": trip_name})
+    country_location = input("Land des Business-Trips: ")
+    if country_location == "":
+        country_location = "DE"
+    trip_data["country_location"] = country_location
 
-# Optional: Auftragsnummer
+    city_name = input("Stadt des Business-Trips: ")
+    if city_name == "":
+        city_name = "Berlin"
+    trip_data["city_name"] = city_name
 
-order_number = input("Auftragsnummer, Z-Nummer:")
-trip_data.update({"order_number": order_number})
+    trip_name = input("Firma oder Anlass des Business-Trips: ")
+    if trip_name == "":
+        trip_name = "Meeting"
+    trip_data["trip_name"] = trip_name
 
-# Ordnerstruktur für die Reise
+    order_number = input("Auftragsnummer, Z-Nummer:")
+    trip_data["order_number"] = order_number
 
-trip_data_folders = {}
-trip_data_folders.update({"hotel": True})
-trip_data_folders.update({"public_transport": True})
-trip_data_folders.update({"car_rental": True})
-trip_data_folders.update({"flight": True})
-trip_data_folders.update({"meal_expense": True})
-trip_data.update({"trip_data_folders": trip_data_folders})
+    trip_data_folders = {
+        "hotel": True,
+        "public_transport": True,
+        "car_rental": True,
+        "flight": True,
+        "meal_expense": True
+    }
+    trip_data["trip_data_folders"] = trip_data_folders
 
-# Funktion zum Erstellen des Verzeichnisses und der Dateien
+    return trip_data
 
 
 def make_tripfolder(input_trip_data: dict) -> dict:
-
-    # Wechsle ins Basisverzeichnis des Business-Trips
-
+    """Erstellt das Verzeichnis und die Dateien für den Business-Trip."""
     os.chdir(input_trip_data["trip_base_folder"])
-
-    # Erzeuge ein Verzeichnis Startdatum+Land+Stadt+Anlass
-
     trip_folder = Path(input_trip_data["start_date"] + "_" + input_trip_data["country_location"] + "_" + input_trip_data["city_name"] + "_" + input_trip_data["trip_name"])
+
+    if trip_folder.exists():
+        shutil.rmtree(trip_folder)
+
     trip_folder.mkdir(parents=True, exist_ok=True)
 
-    # erzeuge aus dem Dict alle Unterordner die auf True gesetzt sind
-
     for key, value in input_trip_data["trip_data_folders"].items():
-        if value is True:
+        if value:
             (trip_folder / key).mkdir(exist_ok=True)
 
-    # spuck ein dictionary aus, inkusive Pfad zur JSON-Datei
-
     output_trip_data = input_trip_data
-    output_trip_data.update({"trip_folder": str(trip_folder)})
+    output_trip_data["trip_folder"] = str(trip_folder)
 
-    # Erzeuge eine Markdown-Datei mit den Reisedaten
     md_file = trip_folder / (
-        trip_data["start_date"] + "_"
-        + trip_data["country_location"] + "_"
-        + trip_data["city_name"] + "_"
-        + trip_data["order_number"] + "_"
-        + trip_data["trip_name"] + ".md")
-    with open(md_file, 'w') as f:
-        f.write("# " + trip_data["trip_name"] + "\n")
-        f.write("## " + trip_data["start_date"] + " - " + trip_data["stop_date"] + "\n")
-        f.write("## " + trip_data["country_location"] + " - " + trip_data["city_name"] + "\n")
-        f.write("## " + trip_data["order_number"] + "\n")
-    output_trip_data.update({"md_file": str(md_file)})
+        input_trip_data["start_date"] + "_"
+        + input_trip_data["country_location"] + "_"
+        + input_trip_data["city_name"] + "_"
+        + input_trip_data["order_number"] + "_"
+        + input_trip_data["trip_name"] + ".md")
 
-    # erzeuge eine JSON-File, leg sie in das Stammlaufwerk des Business-Trips
+    with open(md_file, 'w') as f:
+        f.write("---\n")
+        f.write("tags:\n")
+        f.write("- dienstreise\n")
+        f.write(f"- {input_trip_data['country_location']}\n")
+        f.write(f"- {input_trip_data['city_name']}\n")
+        f.write(f"- {input_trip_data['order_number']}\n")
+        f.write("alias:\n")
+        f.write("---\n")
+        f.write(f"# {input_trip_data['start_date']}\n\n")
+        f.write(f"# {input_trip_data['stop_date']}\n")
+        f.write(f"## {input_trip_data['order_number']}\n")
+
+    output_trip_data["md_file"] = str(md_file)
+
     json_file = trip_folder / "trip_data.json"
     with open(json_file, 'w') as f:
         dump(output_trip_data, f, indent=4, default=str)
-    output_trip_data.update({"json_file": str(json_file)})
+    output_trip_data["json_file"] = str(json_file)
 
-    print("Folgende Informationen wurden in der JSON-Datei gespeichert:")
-    print(output_trip_data)
-    return (output_trip_data)
+    logging.info("Folgende Informationen wurden in der JSON-Datei gespeichert:")
+    logging.info(output_trip_data)
+    return output_trip_data
 
 
-make_tripfolder(trip_data)
+if __name__ == "__main__":
+    try:
+        user_trip_path = os.path.join(get_onedrive_path(), '00_ORG', '00_04_BUSINESS-TRIPS')
+        logging.info(f'Folgendes Verzeichnis wird für die Business-Trips verwendet: {Path(user_trip_path)}')
+        trip_data = get_trip_data(user_trip_path)
+        make_tripfolder(trip_data)
+    except Exception as e:
+        logging.error(f"Ein Fehler ist aufgetreten: {e}")
