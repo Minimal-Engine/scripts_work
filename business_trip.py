@@ -22,42 +22,67 @@ def get_trip_data(user_trip_path: str) -> dict:
     trip_data = {}
     trip_data["trip_base_folder"] = Path(user_trip_path)
 
-    start_date = input("Start Business-Trips: (LEER für heute)")
+    # Startdatum
+    start_date = input("Start Business-Trips: (LEER für heute, Format: YYYY-MM-DD) ")
     if start_date == "":
         start_date = datetime.datetime.today().strftime('%Y-%m-%d')
+    else:
+        try:
+            # Validierung des Datumsformats
+            datetime.datetime.strptime(start_date, '%Y-%m-%d')
+        except ValueError:
+            raise ValueError("Ungültiges Datum. Bitte im Format YYYY-MM-DD eingeben.")
     trip_data["start_date"] = start_date
 
+    # Anzahl der Übernachtungen
     numberofnights = input("Anzahl der Übernachtungen (ENTER für Eine): ")
     if numberofnights == "":
         numberofnights = 1
     else:
-        numberofnights = int(numberofnights)
-
-    stop_date = (datetime.datetime.today() + datetime.timedelta(days=numberofnights)).strftime('%Y-%m-%d')
-    trip_data["stop_date"] = stop_date
+        try:
+            numberofnights = int(numberofnights)
+            if numberofnights < 0:
+                raise ValueError("Die Anzahl der Übernachtungen darf nicht negativ sein.")
+        except ValueError:
+            raise ValueError("Bitte eine gültige Zahl für die Übernachtungen eingeben.")
     trip_data["numberofnights"] = numberofnights
 
-    country_location = input("Land des Business-Trips: ")
+    # Enddatum berechnen
+    start_date_obj = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+    if numberofnights == 0:
+        stop_date_obj = start_date_obj  # Stop-Date ist identisch mit Start-Date
+    else:
+        stop_date_obj = start_date_obj + datetime.timedelta(days=numberofnights)
+    stop_date = stop_date_obj.strftime('%Y-%m-%d')
+    trip_data["stop_date"] = stop_date
+
+    # Land des Business-Trips
+    country_location = input("Land des Business-Trips (LEER für DE): ")
     if country_location == "":
         country_location = "DE"
     trip_data["country_location"] = country_location
 
-    city_name = input("Stadt des Business-Trips: ")
+    # Stadt des Business-Trips
+    city_name = input("Stadt des Business-Trips (LEER für Berlin): ")
     if city_name == "":
         city_name = "Berlin"
     trip_data["city_name"] = city_name
 
-    trip_name = input("Firma oder Anlass des Business-Trips: ")
+    # Firma oder Anlass des Business-Trips
+    trip_name = input("Firma oder Anlass des Business-Trips (LEER für Meeting): ")
     if trip_name == "":
         trip_name = "Meeting"
     trip_data["trip_name"] = trip_name
 
-    order_number = input("Auftragsnummer, Z-Nummer:")
+    # Auftragsnummer
+    order_number = input("Auftragsnummer, Z-Nummer (optional): ")
     trip_data["order_number"] = order_number
 
+    # Ordnerstruktur für die Reise
     trip_data_folders = {
         "hotel": True,
         "public_transport": True,
+        "taxi_ridehailing": True,
         "car_rental": True,
         "flight": True,
         "meal_expense": True
